@@ -7,10 +7,10 @@ from .Session import Session
 from .Sandbox import Sandbox
 from .Locations import Locations
 from .Helpers import Helpers
-from .Gre import Gre
-from .Datacenters import Datacenters
-from .Auth import Auth
-from .Activation import Activation
+from .gre import Gre
+from .datacenters import Datacenters
+from .auth import Auth
+from .activation import Activation
 import requests
 import platform
 import logging
