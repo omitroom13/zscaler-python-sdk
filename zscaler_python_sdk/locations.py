@@ -1,7 +1,7 @@
 
 import logging
 import json
-from .Defaults import *
+from .defaults import *
 
 
 class Locations(object):

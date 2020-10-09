@@ -4,7 +4,7 @@ import time
 import platform
 import re
 import logging
-from .Defaults import *
+from .defaults import *
 
 
 class Session(object):

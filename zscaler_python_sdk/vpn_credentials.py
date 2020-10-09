@@ -2,7 +2,7 @@ import random
 import string
 import json
 import logging
-from .Defaults import *
+from .defaults import *
 
 
 class VpnCredentials(object):

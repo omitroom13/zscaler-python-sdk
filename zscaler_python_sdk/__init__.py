@@ -1,12 +1,12 @@
 
-from .VpnCredentials import VpnCredentials
-from .User import User
-from .Ssl import Ssl
-from .Security import Security
-from .Session import Session
-from .Sandbox import Sandbox
-from .Locations import Locations
-from .Helpers import Helpers
+from .vpn_credentials import VpnCredentials
+from .user import User
+from .ssl import Ssl
+from .security import Security
+from .session import Session
+from .sandbox import Sandbox
+from .locations import Locations
+from .helpers import Helpers
 from .gre import Gre
 from .datacenters import Datacenters
 from .auth import Auth
@@ -24,14 +24,6 @@ __copyright__ = "{0}, {1}".format(time.strftime('%Y'), __author__)
 __maintainer__ = __author__
 __license__ = "BSD"
 __status__ = "Alpha"
-
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S %p'
-)
-
 
 class zscaler(Activation, Auth, Datacenters, Gre, Helpers, Locations, Sandbox, Session, Security, Ssl, User, VpnCredentials):
     def __init__(self):

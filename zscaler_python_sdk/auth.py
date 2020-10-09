@@ -1,6 +1,6 @@
 import logging
 import os
-from .Defaults import *
+from .defaults import *
 
 
 class Auth(object):

@@ -1,6 +1,6 @@
 
 import logging
-from .Defaults import *
+from .defaults import *
 
 
 class Gre(object):
