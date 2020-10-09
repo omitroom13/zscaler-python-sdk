@@ -80,15 +80,7 @@ class Session(object):
             headers=header,
             timeout=REQUEST_TIMEOUTS
         )
-        if res.content:
-            parsed = json.loads(res.content)
-            json_response = json.dumps(parsed, sort_keys=True, indent=4, separators=(
-                ',', ': ')) if res.content else {}
-            LOGGER.debug("GET RESPONSE FROM (URI): {}\nRESPONSE BODY: {}".format(
-                uri,
-                json_response)
-            )
-        self._handle_response(res, res.content.decode('utf-8'))
+        res.raise_for_status()
         return res
     def _perform_post_request(self, uri, body, header):
         attempt = json.dumps(body, sort_keys=True,
@@ -103,15 +95,7 @@ class Session(object):
             headers=header,
             timeout=REQUEST_TIMEOUTS
         )
-        if res.content:
-            parsed = json.loads(res.content)
-            json_response = json.dumps(parsed, sort_keys=True, indent=4, separators=(
-                ',', ': ')) if res.content else {}
-            LOGGER.debug("POST RESPONSE FROM (URI): {}\nRESPONSE BODY: {}".format(
-                uri,
-                json_response)
-            )
-        self._handle_response(res, res.content.decode('utf-8'))
+        res.raise_for_status()
         return res
     def _perform_put_request(self, uri, body, header):
         attempt = json.dumps(body, sort_keys=True,
@@ -126,16 +110,7 @@ class Session(object):
             headers=header,
             timeout=REQUEST_TIMEOUTS
         )
-        if res.content:
-            parsed = json.loads(res.content)
-            json_response = json.dumps(parsed, sort_keys=True, indent=4, separators=(
-                ',', ': ')) if res.content else {}
-            LOGGER.debug("PUT RESPONSE FROM (URI): {}\nRESPONSE BODY: {}".format(
-                uri,
-                json_response)
-            )
-
-        self._handle_response(res, res.content.decode('utf-8'))
+        res.raise_for_status()
         return res
     def _perform_delete_request(self, uri, header):
         res = self.session.delete(
@@ -143,12 +118,7 @@ class Session(object):
             headers=header,
             timeout=REQUEST_TIMEOUTS
         )
-        if res.content:
-            LOGGER.debug("DELETE METHOD (URI): {}, HEADERS: {}".format(
-                uri,
-                header)
-            )
-        self._handle_response(res, res.content.decode('utf-8'))
+        res.raise_for_status()
         return res
 
 
