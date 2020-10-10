@@ -34,7 +34,7 @@ class Session(object):
         self.obfuscatedApiKey = key
         self.ts = now
         LOGGER.debug(
-            "OBFUSCATED APY KEY / Time: {} / {}".format(self.obfuscatedApiKey, self.ts))
+            "OBFUSCATED APY KEY / Time: ***** / {}".format(self.obfuscatedApiKey, self.ts))
     def _get_jsessionid(self, type):
         uri = self.api_url + 'api/v1/authenticatedSession'
         if type == 'api':
