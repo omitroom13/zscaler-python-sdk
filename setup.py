@@ -10,7 +10,7 @@ except ImportError:
 from zscaler_python_sdk import __version__
 
 
-with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
+with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
     long_description = readme.read()
 
 setup(name='zscaler_python_sdk',
@@ -28,11 +28,11 @@ setup(name='zscaler_python_sdk',
           'Natural Language :: English',
       ],
       keywords='zscaler python',
-      author='Eddie Parra',
+      author='omitroom13',
       author_email='NO EMAIL',
-      maintainer='Eddie Parra',
+      maintainer='omitroom13',
       maintainer_email='NO EMAIL',
-      url='https://github.com/eparra/zscaler-python-sdk/',
+      url='https://github.com/omitroom13/zscaler-python-sdk/',
       license='MIT',
       packages=['zscaler_python_sdk'],
       install_requires=['requests>=2.24.0'],
