@@ -22,7 +22,7 @@ class Session(object):
         jsessionid = re.sub(r';.*$', "", cookie)
         LOGGER.debug("JSESSION ID: {}".format(jsessionid))
         return jsessionid
-    def _set_obfuscateApiKey(self, api_key):
+    def _set_obfuscate_api_key(self, api_key):
         now = str(int(time.time() * 1000))
         n = now[-6:]
         r = str(int(n) >> 1).zfill(6)

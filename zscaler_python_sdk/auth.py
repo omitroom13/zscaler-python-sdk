@@ -50,10 +50,10 @@ class Auth(object):
                 "PARTNER_API not found"))
             exit()
     def authenticate_zia_api(self):
-        self._set_obfuscateApiKey(self.zia_api_key)
+        self._set_obfuscate_api_key(self.zia_api_key)
         self._get_jsessionid('api')
     def authenticate_partner_api(self):
-        self._set_obfuscateApiKey(self.partner_api_key)
+        self._set_obfuscate_api_key(self.partner_api_key)
         self._get_jsessionid('partner')
     def set_cloud(self, cloud):
         if cloud in Z_CLOUDS:
