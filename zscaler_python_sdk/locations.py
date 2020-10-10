@@ -45,11 +45,7 @@ class Locations(object):
         }
         if gateway_options:
             body = {**body, **gateway_options}
-        return self.session._perform_post_request(
-            method,
-            body,
-            self._set_header(self.jsessionid)
-        )
+        return self.session._perform_post_request(method,body)
     def get_locations_lite(self):
         method = 'locations/lite'
         res = self.session._perform_get_request(method)
@@ -58,10 +54,7 @@ class Locations(object):
         if not location_id:
             return "Location Requried"
         method = 'locations/lite/' + str(location_id)
-        return self.session._perform_get_request(
-            method,
-            self._set_header(self.jsessionid)
-        )
+        return self.session._perform_get_request(method)
     def update_location_by_id(self, location_id):
         raise RuntimeError('not implemented')
     def delete_location_by_id(self, location_id):
@@ -71,10 +64,7 @@ class Locations(object):
         if not ipv4_addr:
             return 'IPv4 Address Requried'
         uri = 'https://pac.zscalerbeta.net/getVpnEndpoints?srcIp=' + ipv4_addr
-        return self.session.sessionget(
-            uri,
-            headers = self.session.session._set_header(self.session.jsessionid)
-        )
+        return self.session.sessionget(uri)
 
 
 LOGGER = logging.getLogger(__name__)

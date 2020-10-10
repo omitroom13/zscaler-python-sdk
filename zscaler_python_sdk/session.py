@@ -1,34 +1,100 @@
-
 import json
+import logging
 import time
+import os
 import platform
 import re
-import logging
-
 import requests
+import sys
+from http.cookiejar import Cookie
+
+import yaml
 
 from .defaults import *
+from . import load_config
 
+PROFILE_FILENAME = os.path.join(os.environ['HOME'], '.zscaler', 'profile.yaml')
+PROFILE = 'default'
+
+COOKIE_FILENAME = os.path.join(os.environ['HOME'], '.zscaler', 'cookie.yaml')
+
+# constant
+URL = 'url'
+USERNAME = 'username'
+PASSWORD = 'password'
+APIKEY = 'apikey'
 
 class Session(object):
     API_VERSION  = 'api/v1'
     USER_AGENT = 'zia api sdk'
-    def __init__(self, url, username, password, api_key):
-        self.url = url
-        if url[-1] == '/':
+    def __init__(self, profile='default'):
+        self.profile = profile
+        self._profile = None
+        self.get_profile(name=profile)
+        self.url = self._profile[URL]
+        if self.url[-1] == '/':
             raise RuntimeError('url {} must not be end with "/".'.format(url))
-        self.username = username
-        self.password = password
-        (self.timestamp, self.obfuscated_api_key) = self._obfuscate_api_key(api_key)
+        self.username = self._profile[USERNAME]
+        self.password = self._profile[PASSWORD]
+        (self.timestamp, self.obfuscated_api_key) = self._obfuscate_api_key(self._profile[APIKEY])
         self.session = requests.Session()
+    def get_profile(self, filename=PROFILE_FILENAME, name=PROFILE, reread=False):
+        if self._profile is None or reread:
+            try:
+                with open(filename) as file:
+                    self._profile = yaml.safe_load(file)[name]
+            except FileNotFoundError:
+                raise RuntimeError('Cannot find profile file: {}'.format(filename))
+        return self._profile
+    def load_cookie(self, filename=COOKIE_FILENAME, name=PROFILE, reread=False):
+        if len(self.session.cookies) == 0 or reread:
+            try:
+                y = None
+                with open(filename) as file:
+                    y = yaml.safe_load(file)
+                for d in y[name]:
+                    c = Cookie(
+                        d['version'],
+                        d['name'],
+                        d['value'],
+                        d['port'],
+                        d['port_specified'],
+                        d['domain'],
+                        d['domain_specified'],
+                        d['domain_initial_dot'],
+                        d['path'],
+                        d['path_specified'],
+                        d['secure'],
+                        d['expires'],
+                        d['discard'],
+                        d['comment'],
+                        d['comment_url'],
+                        d['_rest'],
+                        d['rfc2109'])
+                    self.session.cookies.set_cookie(c)
+            except FileNotFoundError:
+                LOGGER.warning('Cannot find cookie file: {}'.format(filename))
+            except KeyError:
+                LOGGER.warning('Cannot find cookie profile: {}'.format(filename))
+    def save_cookie(self, filename=COOKIE_FILENAME, name=PROFILE):
+        y = {}
+        try:
+            with open(filename) as file:
+                y = yaml.safe_load(file)
+        except FileNotFoundError:
+            pass
+        if name not in y:
+            y[name] = []
+        for c in self.session.cookies:
+            y[name].append(c.__dict__)
+        with open(filename, 'w') as file:
+            yaml.dump(y, file)
     def _set_header(self, cookie=None):
         header = {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
             'User-Agent': self.USER_AGENT
         }
-        if cookie:
-            header['cookie'] = cookie
         LOGGER.debug("HTTP Header: {}".format(header))
         return header
     def _parse_jsessionid(self, cookie):
@@ -49,6 +115,8 @@ class Session(object):
         return (now, key)
     def authenticate(self):
         method = 'authenticatedSession'
+        if self.session.cookies.get('JSESSIONID'):
+            return self._perform_get_request(method)
         body = {
             'username': self.username,
             'password': self.password,
@@ -56,18 +124,18 @@ class Session(object):
             'timestamp': self.timestamp
         }
         LOGGER.debug("HTTP BODY: {}".format(body))
-        res = self._perform_post_request(
-            method,
-            body
-        )
+        res = self._perform_post_request(method, body)
         LOGGER.debug(res)
         if not res['authType']:
             raise RuntimeError('not authenticated')
         LOGGER.info('authenticated')
+        self.save_cookie()
     def _perform_get_request(self, method, header=None):
+        cookies = None
         if header == None:
             header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, method])
+        LOGGER.info(list(self.session.cookies))
         res = self.session.get(
             uri,
             headers=header,
@@ -81,8 +149,11 @@ class Session(object):
             return j
         except json.decoder.JSONDecodeError:
             pass
+        if re.search(r'<title>Zscaler Maintenance Page</title>', res.text):
+            LOGGER.error(res.is_redirect)
         return res.text
     def _perform_post_request(self, method, body, header=None):
+        cookies = None
         if header == None:
             header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, method])
@@ -99,10 +170,12 @@ class Session(object):
             timeout=REQUEST_TIMEOUTS
         )
         res.raise_for_status()
+        LOGGER.info(self.session.cookies)
         if len(res.text) == 0:
             return None
         return res.json()
     def _perform_put_request(self, method, body, header=None):
+        cookies = None
         if header == None:
             header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, method])
@@ -119,10 +192,12 @@ class Session(object):
             timeout=REQUEST_TIMEOUTS
         )
         res.raise_for_status()
+        LOGGER.info(self.session.cookies)
         if len(res.text) == 0:
             return None
         return res.json()
     def _perform_delete_request(self, method, header=None):
+        cookies = None
         if header == None:
             header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, method])
@@ -132,9 +207,19 @@ class Session(object):
             timeout=REQUEST_TIMEOUTS
         )
         res.raise_for_status()
+        LOGGER.info(self.session.cookies)
         if len(res.text) == 0:
             return None
         return res.json()
 
 
 LOGGER = logging.getLogger(__name__)
+
+if __name__ == '__main__':
+    load_config()
+    LOGGER.setLevel(logging.INFO)
+    session = Session()
+    session.load_cookie()
+    LOGGER.info(session.authenticate())
+    LOGGER.info(session.session.cookies.get('JSESSIONID'))
+    LOGGER.info(session.authenticate())

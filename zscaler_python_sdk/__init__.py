@@ -1,48 +1,28 @@
-import requests
-import platform
+import yaml
 import logging
-import time
+import logging.config
+import os
+import pkgutil
+import sys
 
-from .activation import Activation
-from .admin_audit_logs import AdminAuditLogs
-from .auth import Auth
-from .datacenters import Datacenters
-from .gre import Gre
-from .helpers import Helpers
-from .locations import Locations
-from .security import Security
-from .session import Session
-from .sandbox import Sandbox
-from .ssl import Ssl
-from .user import User
-from .vpn_credentials import VpnCredentials
+import yaml
 
-__version_tuple__ = (0, 0, 5)
-__version__ = '.'.join(map(str, __version_tuple__))
-__email__ = 'NO EMAIL'
-__author__ = "Eddie Parra <{0}>".format(__email__)
-__copyright__ = "{0}, {1}".format(time.strftime('%Y'), __author__)
-__maintainer__ = __author__
-__license__ = "BSD"
-__status__ = "Alpha"
+USER_LOG_FILE = './config.yaml'
 
-class ZscalerInternetAccess():
-    def __init__(self, url, username, password, api_key):
-        self.debug = False
-        self.session = Session(url, username, password, api_key)
-        self.user_agent = 'ZscalerSDK/%s Python/%s %s/%s' % (
-            __version__,
-            platform.python_version(),
-            platform.system(),
-            platform.release()
-        )
-        self.activation = Activation(self.session)
-        self.admin_audit_logs = AdminAuditLogs(self.session)
-        self.location = Locations(self.session)
-        self.security = Security(self.session)
-        self.datacenters = Datacenters(self.session)
-        self.sandbox = Sandbox(self.session)
-        self.ssl = Ssl(self.session)
-        self.user = User(self.session)
-        self.gre = Gre(self.session)
-        self.vpn_credentials = VpnCredentials(self.session)
+def load_config():
+    global _CONFIG
+    _CONFIG = yaml.safe_load(pkgutil.get_data(__package__, 'data/config.yaml').decode('utf-8'))
+    # 部分的に overwrite したほうが良いのだろうがやっていない
+    if os.path.exists(USER_LOG_FILE):
+        with open(USER_LOG_FILE) as configfile:
+            _CONFIG = yaml.safe_load(configfile.read())
+    if 'log' in _CONFIG:
+        logging.config.dictConfig(_CONFIG['log'])
+
+def get_config():
+    if _CONFIG is None:
+        load_config()
+    return _CONFIG
+
+LOGGER = logging.getLogger(__name__)
+_CONFIG = None
