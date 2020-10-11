@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "zia"
+version = "0.1.1"
+description = "Python SDK for Zscaler Internet Access"
+readme = "README.md"
+authors = ["omitroom13"]
+homepage = "https://github.com/omitroom13"
+repository = "https://github.com/omitroom13/zia"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.24.0"
+PyYAML = "^5.3.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
