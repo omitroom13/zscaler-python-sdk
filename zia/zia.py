@@ -16,13 +16,13 @@ from .ssl import Ssl
 from .user import User
 from .vpn_credentials import VpnCredentials
 
-__version_tuple__ = (0, 0, 5)
+__version_tuple__ = (0, 1, 0)
 __version__ = '.'.join(map(str, __version_tuple__))
 __email__ = 'NO EMAIL'
-__author__ = "Eddie Parra <{0}>".format(__email__)
+__author__ = "omitroom13 <{0}>".format(__email__)
 __copyright__ = "{0}, {1}".format(time.strftime('%Y'), __author__)
 __maintainer__ = __author__
-__license__ = "BSD"
+__license__ = "MIT"
 __status__ = "Alpha"
 
 class ZscalerInternetAccess():
