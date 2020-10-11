@@ -160,7 +160,7 @@ class Session(object):
     def request(self, method, path, body=None):
         header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, path])
-        LOGGER.debug('method {} path {} body {}'.format(method, path, body))
+        LOGGER.debug('method {} path {} body {}'.format(method.__name__, path, body))
         q = None
         kwargs = {
             'headers':header,
@@ -180,17 +180,25 @@ class Session(object):
         if res.ok:
             error = None
         if error:
-            raise RequestError(method, path, body, error)
+            raise RequestError(method.__name__, path, body, error)
         if res_json:
             return res_json
         if len(res.text) == 0:
             return None
         if re.search(r'<title>Zscaler Maintenance Page</title>', res.text):
             error = {'code': 'MAINTENANCE', 'message': 'undergoing maintenance'}
-            raise RequestError(method, path, body, error)
+            raise RequestError(method.__name__, path, body, error)
+        elif re.search(r'var contentString = "Something has gone wrong while attempting to display this page.";', res.text):
+            error = {'code': 'ERROR', 'message': 'Something has gone wrong'}
+            raise SessionTimeoutError(method.__name__, path, body, error)
         elif res.text == 'SESSION_NOT_VALID':
             error = {'code': 'SESSION_NOT_VALID', 'message': 'maybe cookie timeout'}
-            raise SessionTimeoutError(method, path, body, error)
+            raise SessionTimeoutError(method.__name__, path, body, error)
+        elif re.search(r'Request body is invalid', res.text):
+            error = {'code': 'REQUEST_NOT_VALID', 'message': res.text}
+            raise SessionTimeoutError(method.__name__, path, body, error)
+        else:
+            LOGGER.warning("text output might be error: {}".format(res.text))
         return res.text
     def get(self, path):
         return self.request(self.session.get, path)
