@@ -8,7 +8,7 @@ log:
       class: logging.StreamHandler
       formatter: console
       level: DEBUG
-      stream: ext://sys.stdout
+      stream: ext://sys.stderr
   loggers:
     __main__:
       level: DEBUG
