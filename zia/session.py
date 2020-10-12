@@ -199,6 +199,7 @@ class Session(object):
             raise RequestError(method.__name__, path, body, error)
         else:
             LOGGER.warning("text output might be error: {}".format(res.text))
+        # it may not be OK strictly becase api dit not return json.
         return res.text
     def get(self, path):
         return self.request(self.session.get, path)

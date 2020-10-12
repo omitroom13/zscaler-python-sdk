@@ -1,3 +1,4 @@
+import json
 import logging
 import logging.config
 import os
@@ -25,13 +26,14 @@ def get_config():
 class ZiaApiBase(object):
     def __init__(self, session, output_type='dict'):
         self._session = session
-        #json or string
         self._output_type = output_type
     def _output(self, res):
         if self._output_type == 'dict':
             return res
-        #for fire
-        return json.dumps(res, indent=True)
+        elif self._output_type == 'str':
+            #for fire
+            return json.dumps(res, indent=True, ensure_ascii=False)
+        raise RuntimeError('unknown output_type {}'.format(self._output_type))
 
 
 LOGGER = logging.getLogger(__name__)
