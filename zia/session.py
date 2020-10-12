@@ -190,13 +190,13 @@ class Session(object):
             raise RequestError(method.__name__, path, body, error)
         elif re.search(r'var contentString = "Something has gone wrong while attempting to display this page.";', res.text):
             error = {'code': 'ERROR', 'message': 'Something has gone wrong'}
-            raise SessionTimeoutError(method.__name__, path, body, error)
+            raise RequestError(method.__name__, path, body, error)
         elif res.text == 'SESSION_NOT_VALID':
             error = {'code': 'SESSION_NOT_VALID', 'message': 'maybe cookie timeout'}
             raise SessionTimeoutError(method.__name__, path, body, error)
         elif re.search(r'Request body is invalid', res.text):
             error = {'code': 'REQUEST_NOT_VALID', 'message': res.text}
-            raise SessionTimeoutError(method.__name__, path, body, error)
+            raise RequestError(method.__name__, path, body, error)
         else:
             LOGGER.warning("text output might be error: {}".format(res.text))
         return res.text
