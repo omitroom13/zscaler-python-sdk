@@ -40,7 +40,6 @@ $ pip install zia
 $ zia --help
 $ zia policies --help
 $ zia policies list
-...
 [
  {
   "id": 463593,
@@ -68,7 +67,7 @@ $ zia policies list
    "MATURE_HUMOR",
    "ANONYMIZER"
   ],
-
+...
 ```
 
 ## API Support
