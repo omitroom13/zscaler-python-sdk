@@ -4,6 +4,7 @@ from .session import Session
 from .activation import Activation
 from .admin_audit_logs import AdminAuditLogs
 from .admin_role_management import AdminRoleManagement
+from .cloud_sandbox_report import CloudSandboxReport
 from .datacenters import Datacenters
 from .gre import Gre
 from .locations import Locations
@@ -21,6 +22,7 @@ class ZscalerInternetAccess(object):
         self.activation = Activation(self._session, 'str')
         self.admin_audit_logs = AdminAuditLogs(self._session, 'str')
         self.admin_role_management = AdminRoleManagement(self._session, 'str')
+        self.sandbox = CloudSandboxReport(self._session, 'str')
         # self.location = Locations(self.session)
         # self.security = Security(self.session)
         # self.datacenters = Datacenters(self.session)
