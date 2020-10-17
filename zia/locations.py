@@ -1,69 +1,70 @@
 import logging
 import json
 
-from .defaults import *
-from zia import ZiaApiBase
+from .defaults import load_config, get_config, RequestError, SessionTimeoutError, ZiaApiBase
+
+class SubLocations(ZiaApiBase):
+    def list(self, location_id):
+        """
+        Gets the sub-location information for the location with the specified ID
+        """
+        path = 'locations/{}/sublocations'.format(location_id)
+        return self._output(self._session.get(path))
+    def create(self, sublocation):
+        """
+        Adds new sub-locations for the specified location_id
+        """
+        path = 'locations'
+        if 'parentId' not in sublocation:
+            raise RuntimeError('parentId required')
+        return self._output(self._session.post(path, sublocation))
 
 class Locations(ZiaApiBase):
-    def get_locations(self):
+    def __init__(self, _session, _output_type):
+        super().__init__(_session, _output_type)
+        self.sublocations = SubLocations(self._session, _output_type)
+    def list(self, summary=False):
+        """
+        Gets information on locations
+        --summary : Gets a name and ID dictionary of locations
+        """
         path = 'locations'
+        if summary:
+            path += '/lite'
         return self._output(self._session.get(path))
-    def create_location(self, location_name, vpn_cred_id, fqdn, gateway_options=None):
+    def create(self, location):
+        """
+        Adds new locations
+        """
         path = 'locations'
-        if not vpn_cred_id:
-            return 'VPN Credential ID Required'
-        if not fqdn:
-            return 'FQDN Required'
-        body = {
-            "name": location_name,
-            "vpnCredentials": [
-                {
-                    "id": vpn_cred_id,
-                    "type": "UFQDN",
-                    "fqdn": fqdn
-                }
-            ]
-        }
-        if gateway_options:
-            body = {**body, **gateway_options}
-        return self._output(self._session.post(path, body))
-    def create_sub_location(self, parent_id, location_name, ip_addresses, gateway_options=None):
-        path = 'locations'
-        if not parent_id:
-            raise RuntimeError('Location Parent ID Required')
-        if not location_name:
-            raise RuntimeError('Location Name Required')
-        if not ip_addresses:
-            raise RuntimeError('IP Addresses Required')
-        body = {
-            "name": location_name,
-            "parentId": parent_id,
-            "ipAddresses": [
-                ip_addresses
-            ],
-        }
-        if gateway_options:
-            body = {**body, **gateway_options}
-        return self._output(self._session.post(path,body))
-    def get_locations_lite(self):
-        path = 'locations/lite'
-        res = self._output(self._session.get(path))
-        return res.json()
-    def get_locations_by_id(self, location_id):
+        return self._output(self._session.post(path, location))
+    def show(self, location_id):
+        """
+        Gets the location information for the specified ID
+        """
         if not location_id:
             return "Location Requried"
-        path = 'locations/lite/' + str(location_id)
+        path = 'locations/{}'.format(location_id)
         return self._output(self._session.get(path))
-    def update_location_by_id(self, location_id):
-        raise NotImplementedError()
-    def delete_location_by_id(self, location_id):
-        raise NotImplementedError()
-    def get_vpn_endpoints(self, ipv4_addr):
-        raise RuntimeError('これセッションである必要があるの? エンドポイントがおかしくないか?')
-        if not ipv4_addr:
-            return 'IPv4 Address Requried'
-        uri = 'https://pac.zscalerbeta.net/getVpnEndpoints?srcIp=' + ipv4_addr
-        return self._output(self._session.sessionget(uri))
+    def update(self, location_id, location):
+        """
+        Updates the location and sub-location information for the specified ID
+        """
+        path = 'locations/{}'.format(location_id)
+        return self._output(self._session.put(path,location))
+    def delete(self, location_object):
+        """
+        location_id : Deletes the location or sub-location for the specified ID
+        location_ids : Bulk delete locations up to a maximum of 100 locations per request
+        """
+        t = type(location_object)
+        if t is int or t is str:
+            path = 'locations/{}'.format(location_object)
+            return self._output(self._session.delete(path))
+        elif t is dict:
+            path = 'locations/bulkDelete'
+            return self._output(self._session.post(path, location_object))
+        raise RuntimeError('unknown location_id type {}'.format(t.__name__))
 
 
 LOGGER = logging.getLogger(__name__)
