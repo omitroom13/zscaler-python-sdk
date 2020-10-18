@@ -11,9 +11,9 @@ from .gre import Gre
 from .locations import Locations
 from .security import Security
 from .sandbox import Sandbox
-from .ssl import Ssl
+from .ssl_inspection_settings import SslSettings
 from .user import User
-from .vpn_credentials import VpnCredentials
+from .traffic_forwarding import VpnCredentials
 from .url_filtering_policies import UrlFilteringPolicies
 from .url_categories import UrlCategories
 

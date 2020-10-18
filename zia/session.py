@@ -179,7 +179,13 @@ class Session(object):
             pass
         if res.ok:
             error = None
-        if error:
+        if error and 'code' in error:
+            raise RequestError(method.__name__, path, body, error)
+        if error and re.match(r'Rate Limit', error['message']):
+            #[API Rate Limit Summary | Zscaler](https://help.zscaler.com/zia/api-rate-limit-summary)
+            #hint: ssl settings is very low limit(1/min and 4/hr)
+            error['code'] = "REATELIMITEXCEEDED"
+            error['message'] += ". Retry After {}".format(error['Retry-After'])
             raise RequestError(method.__name__, path, body, error)
         if res_json:
             return res_json
@@ -207,8 +213,8 @@ class Session(object):
             LOGGER.warning("text output might be error: {}".format(res.text))
         # it may not be OK strictly becase api dit not return json.
         return res.text
-    def get(self, path):
-        return self.request(self.session.get, path)
+    def get(self, path, body=None):
+        return self.request(self.session.get, path, body)
     def post(self, path, body):
         return self.request(self.session.post, path, body)
     def put(self, path, body):

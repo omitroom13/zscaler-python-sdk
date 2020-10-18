@@ -11,9 +11,9 @@ from .gre import Gre
 from .locations import Locations
 from .security import Security
 from .sandbox import Sandbox
-from .ssl import Ssl
+from .ssl_inspection_settings import SslSettings
 from .user import User
-from .vpn_credentials import VpnCredentials
+from .traffic_forwarding import VpnCredentials
 from .url_filtering_policies import UrlFilteringPolicies
 from .url_categories import UrlCategories
 
@@ -29,10 +29,10 @@ class ZscalerInternetAccess(object):
         self.security = Security(self._session, 'str')
         # self.datacenters = Datacenters(self._session, 'str')
         # self.sandbox = Sandbox(self._session, 'str')
-        # self.ssl = Ssl(self._session, 'str')
+        self.ssl = SslSettings(self._session, 'str')
         # self.user = User(self._session, 'str')
         # self.gre = Gre(self._session, 'str')
-        # self.vpn_credentials = VpnCredentials(self._session, 'str')
+        self.vpn = VpnCredentials(self._session, 'str')
         self.policies = UrlFilteringPolicies(self._session, 'str')
         self.categories = UrlCategories(self._session, 'str')
     def authenticate(self):
