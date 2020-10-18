@@ -3,7 +3,6 @@ import logging
 import fire
 
 from .defaults import load_config, RequestError
-from .session import Session
 from zia import ZscalerInternetAccess
 
 
