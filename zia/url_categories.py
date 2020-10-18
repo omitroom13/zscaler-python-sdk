@@ -6,11 +6,14 @@ import sys
 from .defaults import load_config, get_config, RequestError, SessionTimeoutError, ZiaApiBase
 
 class UrlCategories(ZiaApiBase):
-    def list(self, custom_only=False):
+    def list(self, custom_only=False, summary=False):
         """
         Gets information about all or custom URL categories
+        --summary : Gets a lightweight key-value list of all or custom URL categories
         """
         path = 'urlCategories'
+        if summary:
+            path += '/lite'
         if custom_only:
             path += '?customOnly=true'
         return self._output(self._session.get(path))
@@ -20,12 +23,6 @@ class UrlCategories(ZiaApiBase):
         """
         path = 'urlCategories'
         return self._output(self._session.post(path, category))
-    def list_lite(self):
-        """
-        Gets a lightweight key-value list of all or custom URL categories
-        """
-        path = 'urlCategories/lite'
-        return self._output(self._session.get(path))
     def get_quota(self):
         """
         Gets the URL quota information for your organization
