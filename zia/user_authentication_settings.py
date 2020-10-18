@@ -22,7 +22,7 @@ class ExemptedUrls(ZiaApiBase):
         path = "authSettings/exemptedUrls?action=REMOVE_FROM_LIST"
         return self._output(self._session.post(path, urls))
 
-    
+
 class AuthSettings(ZiaApiBase):
     def __init__(self, _session, _output_type):
         super().__init__(_session, _output_type)

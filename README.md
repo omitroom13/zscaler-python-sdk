@@ -1,6 +1,6 @@
-# Zscaler CLI
+# Zscaler Internet Access CLI
 
-This is a Python CLI for Zscaler Internet Access.  This cli (or client library) is designed to support the Zscaler Internet Access (ZIA) [API](https://help.zscaler.com/zia/about-api) and [SD-WAN API](https://help.zscaler.com/zia/sd-wan-api-integration) (aka "Partner API").  All API referecnes can be found here [[LINK](https://help.zscaler.com/zia/api)].  **PLEASE READ THE DOCUMENTATION BEFORE CONTACTING ZSCALER**
+This is a CLI for Zscaler Internet Access.  This cli (or library package) is designed to support the Zscaler Internet Access (ZIA) [API](https://help.zscaler.com/zia/about-api) and [SD-WAN API](https://help.zscaler.com/zia/sd-wan-api-integration) (aka "Partner API").  All API referecnes can be found here [[LINK](https://help.zscaler.com/zia/api)].  **PLEASE READ THE DOCUMENTATION BEFORE CONTACTING ZSCALER**
 
 This CLI has been developed mainly using Python 3.8.5 on Ubuntu 20.04 LTS (Focal Fossa).
 
