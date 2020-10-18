@@ -12,7 +12,7 @@ def main():
     LOGGER.setLevel(logging.DEBUG)
     try:
         z = ZscalerInternetAccess()
-        z.authenticate()
+        # z.authenticate()
         fire.Fire(z)
     except RequestError as exc:
         LOGGER.error(exc)

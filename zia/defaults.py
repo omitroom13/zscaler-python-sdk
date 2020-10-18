@@ -53,6 +53,8 @@ class RequestError(Exception):
 class SessionTimeoutError(RequestError):
     pass
 
+class AuthenticationError(RequestError):
+    pass
 
 class ZiaApiBase(object):
     def __init__(self, session, output_type='dict'):

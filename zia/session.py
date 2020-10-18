@@ -9,7 +9,7 @@ from http.cookiejar import Cookie
 import yaml
 
 
-from .defaults import load_config, RequestError, SessionTimeoutError
+from .defaults import load_config, RequestError, SessionTimeoutError, AuthenticationError
 
 PROFILE_FILENAME = os.path.join(os.environ['HOME'], '.zscaler', 'profile.yaml')
 PROFILE = 'default'
@@ -40,7 +40,6 @@ class Session(object):
         (self.timestamp, self.obfuscated_api_key) = self._obfuscate_api_key(
             self._profile[APIKEY])
         self.session = requests.Session()
-        self.load_cookie()
 
     def get_profile(self, filename=PROFILE_FILENAME, name=PROFILE, reread=False):
         if self._profile is None or reread:
@@ -53,40 +52,33 @@ class Session(object):
         return self._profile
 
     def load_cookie(self, filename=COOKIE_FILENAME, name=PROFILE, reread=False):
-        if len(self.session.cookies) == 0 or reread:
-            try:
-                y = None
-                with open(filename) as file:
-                    y = yaml.safe_load(file)
-                for d in y[name].values():
-                    c = Cookie(
-                        d['version'],
-                        d['name'],
-                        d['value'],
-                        d['port'],
-                        d['port_specified'],
-                        d['domain'],
-                        d['domain_specified'],
-                        d['domain_initial_dot'],
-                        d['path'],
-                        d['path_specified'],
-                        d['secure'],
-                        d['expires'],
-                        d['discard'],
-                        d['comment'],
-                        d['comment_url'],
-                        d['_rest'],
-                        d['rfc2109'])
-                    if c.is_expired():
-                        LOGGER.warning('cookie expired : {}'.format(d['name']))
-                        continue
-                    d['expires'] = None
-                    self.session.cookies.set_cookie(c)
-            except FileNotFoundError:
-                LOGGER.warning('Cannot find cookie file: {}'.format(filename))
-            except KeyError:
-                LOGGER.warning(
-                    'Cannot find cookie profile: {}'.format(filename))
+        y = None
+        with open(filename) as file:
+            y = yaml.safe_load(file)
+        for d in y[name].values():
+            c = Cookie(
+                d['version'],
+                d['name'],
+                d['value'],
+                d['port'],
+                d['port_specified'],
+                d['domain'],
+                d['domain_specified'],
+                d['domain_initial_dot'],
+                d['path'],
+                d['path_specified'],
+                d['secure'],
+                d['expires'],
+                d['discard'],
+                d['comment'],
+                d['comment_url'],
+                d['_rest'],
+                d['rfc2109'])
+            if c.is_expired():
+                LOGGER.warning('cookie expired : {}'.format(d['name']))
+                continue
+            d['expires'] = None
+            self.session.cookies.set_cookie(c)
 
     def save_cookie(self, filename=COOKIE_FILENAME, name=PROFILE):
         y = {}
@@ -100,9 +92,6 @@ class Session(object):
         for c in self.session.cookies:
             y[name][c.name] = c.__dict__
             if c.name == 'JSESSIONID' and 'expires' in y[name][c.name]:
-                # override session cookie(d['expires']==None) for cli
-                # expire_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=2*60*60)
-                # y[name][c.name]['expires'] = expire_datetime.strftime('%a, %d %b %Y %H:%m:%S GMT')
                 # 2 hours is no basis.
                 y[name][c.name]['expires'] = int(time.time()) + 2*60*60
         with open(filename, 'w') as file:
@@ -131,17 +120,26 @@ class Session(object):
         return (now, key)
 
     def authenticate(self):
-        path = 'authenticatedSession'
+        if self.session.cookies.get('JSESSIONID'):
+            return {'code': 'OK', 'message': 'already authenticated'}
         try:
-            if self.session.cookies.get('JSESSIONID'):
-                LOGGER.info("cookie authentication")
-                res = self.get(path)
-                # GET /authenticatedSession does not validate session(JSESSIONID cookie), so execute other method
-                self.get_status()
+            self.load_cookie()
+        except FileNotFoundError:
+            LOGGER.warning(
+                'Cannot find cookie file: {}'.format(filename))
+        except KeyError:
+            LOGGER.warning(
+                'Cannot find cookie profile: {}'.format(filename))
+        path = 'authenticatedSession'
+        if self.session.cookies.get('JSESSIONID'):
+            LOGGER.info("cookie authentication")
+            res = self.get(path)
+            if 'authType' in res and res['authType'] == 'ADMIN_LOGIN':
                 LOGGER.info("authenticated")
+                res['code'] = 'OK'
+                res['message'] = 'cookie authenticated'
                 return res
-        except SessionTimeoutError:
-            LOGGER.info("session timedout. trying re-authn")
+            LOGGER.info("cookie session expired")
         LOGGER.info("password authentication")
         body = {
             'username': self.username,
@@ -152,10 +150,13 @@ class Session(object):
         LOGGER.debug("HTTP BODY: {}".format(body))
         res = self.post(path, body)
         LOGGER.debug(res)
-        if not res['authType']:
-            raise RuntimeError('not authenticated')
-        LOGGER.info('authenticated')
-        self.save_cookie()
+        if 'authType' in res and res['authType'] == 'ADMIN_LOGIN':
+            LOGGER.info('authenticated')
+            self.save_cookie()
+            res['code'] = 'OK'
+            res['message'] = 'credential authenticated'
+            return res
+        raise RuntimeError('either credential or apikey are wrong')
 
     def get_status(self):
         path = 'status'
@@ -166,6 +167,9 @@ class Session(object):
         return self.post(path)
 
     def request(self, method, path, body=None):
+        res = self.authenticate()
+        if res['code'] != 'OK':
+            raise RuntimeError(res)
         header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, path])
         LOGGER.debug('method {} path {} body {}'.format(
