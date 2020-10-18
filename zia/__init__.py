@@ -6,11 +6,10 @@ from .admin_audit_logs import AdminAuditLogs
 from .admin_role_management import AdminRoleManagement
 from .cloud_sandbox_report import CloudSandboxReport
 from .firewall import Firewall
-from .datacenters import Datacenters
-from .gre import Gre
+# from .datacenters import Datacenters
+# from .gre import Gre
 from .locations import Locations
 from .security import Security
-from .sandbox import Sandbox
 from .ssl_inspection_settings import SslSettings
 from .user_management import Departments, Groups, Users
 from .traffic_forwarding import VpnCredentials

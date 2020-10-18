@@ -10,14 +10,14 @@ class FilteringRules(ZiaApiBase):
         """
         path = 'firewallFilteringRules'
         # '/firewallFilteringRules' does not have /lite API
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, rule_id):
         """
         Gets the firewall filtering rule information for the specified ID
         """
         path = 'firewallFilteringRules/{}'.format(rule_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class IpDestinationGroups(ZiaApiBase):
@@ -29,14 +29,14 @@ class IpDestinationGroups(ZiaApiBase):
         path = 'ipDestinationGroups'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, ip_group_id):
         """
         Gets the IP destination group information for the specified ID
         """
         path = 'ipDestinationGroups/{}'.format(ip_group_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class IpSourceGroups(ZiaApiBase):
@@ -48,14 +48,14 @@ class IpSourceGroups(ZiaApiBase):
         path = 'ipSourceGroups'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, ip_group_id):
         """
         Gets the IP source group information for the specified ID
         """
         path = 'ipSourceGroups/{}'.format(ip_group_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class NetworkApplicationGroups(ZiaApiBase):
@@ -67,14 +67,14 @@ class NetworkApplicationGroups(ZiaApiBase):
         path = 'networkApplicationGroups'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, group_id):
         """
         Gets the network application group information for the specified ID
         """
         path = 'networkApplicationGroups/{}'.format(group_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class NetworkApplications(ZiaApiBase):
@@ -84,14 +84,14 @@ class NetworkApplications(ZiaApiBase):
         """
         path = 'networkApplications'
         # '/networkAplications' does not have /lite API
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, app_id):
         """
         Gets the network application information for the specified ID
         """
         path = 'networkApplications/{}'.format(app_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class NetworkServiceGroups(ZiaApiBase):
@@ -103,14 +103,14 @@ class NetworkServiceGroups(ZiaApiBase):
         path = 'networkServiceGroups'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, service_group_id):
         """
         Gets the network service group information for the specified ID
         """
         path = 'networkServiceGroups/{}'.format(service_group_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class NetworkServices(ZiaApiBase):
@@ -122,14 +122,14 @@ class NetworkServices(ZiaApiBase):
         path = 'networkServices'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def show(self, service_id):
         """
         Gets the network service for the specified ID
         """
         path = 'networkServices/{}'.format(service_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class TimeWindows(ZiaApiBase):
@@ -141,21 +141,20 @@ class TimeWindows(ZiaApiBase):
         path = 'timeWindows'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 class Firewall(ZiaApiBase):
-    def __init__(self, _session, _output_type):
-        super().__init__(_session, _output_type)
-        self.rules = FilteringRules(self._session, _output_type)
-        self.destination = IpDestinationGroups(self._session, _output_type)
-        self.source = IpSourceGroups(self._session, _output_type)
-        self.application_groups = NetworkApplicationGroups(
-            self._session, _output_type)
-        self.applications = NetworkApplications(self._session, _output_type)
-        self.service_groups = NetworkServiceGroups(self._session, _output_type)
-        self.services = NetworkServices(self._session, _output_type)
-        self.timewindows = TimeWindows(self._session, _output_type)
+    def __init__(self, _session):
+        super().__init__(_session)
+        self.rules = FilteringRules(self._session)
+        self.destination = IpDestinationGroups(self._session)
+        self.source = IpSourceGroups(self._session)
+        self.application_groups = NetworkApplicationGroups(self._session)
+        self.applications = NetworkApplications(self._session)
+        self.service_groups = NetworkServiceGroups(self._session)
+        self.services = NetworkServices(self._session)
+        self.timewindows = TimeWindows(self._session)
 
 
 LOGGER = logging.getLogger(__name__)

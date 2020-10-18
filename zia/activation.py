@@ -9,7 +9,7 @@ class Activation(ZiaApiBase):
         Gets the activation status for a configuration change
         """
         path = 'status'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def activate(self):
         """
@@ -17,7 +17,7 @@ class Activation(ZiaApiBase):
         """
         path = 'status/activate'
         body = {}
-        return self._output(self._session.post(path, body))
+        return self._session.post(path, body)
 
 
 LOGGER = logging.getLogger(__name__)

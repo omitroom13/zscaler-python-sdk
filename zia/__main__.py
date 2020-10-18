@@ -3,6 +3,7 @@ import logging
 import fire
 
 from .defaults import load_config, RequestError
+from .helpers import decorate_for_fire
 from zia import ZscalerInternetAccess
 
 
@@ -11,7 +12,7 @@ def main():
     LOGGER = logging.getLogger(__name__)
     LOGGER.setLevel(logging.DEBUG)
     try:
-        z = ZscalerInternetAccess()
+        z = decorate_for_fire(ZscalerInternetAccess())
         fire.Fire(z)
     except RequestError as exc:
         LOGGER.error(exc)

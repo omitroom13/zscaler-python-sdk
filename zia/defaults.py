@@ -57,17 +57,5 @@ class AuthenticationError(RequestError):
     pass
 
 class ZiaApiBase(object):
-    def __init__(self, session, output_type='dict'):
+    def __init__(self, session):
         self._session = session
-        if output_type not in ['str', 'dict']:
-            raise RuntimeError('unknown output_type {}'.format(output_type))
-        self._output_type = output_type
-
-    def _output(self, res, _output_type=None):
-        if _output_type == 'dict':
-            return res
-        elif _output_type == 'str':
-            # for fire
-            return json.dumps(res, indent=True, ensure_ascii=False)
-        # _output_type is None
-        return self._output(res, _output_type=self._output_type)

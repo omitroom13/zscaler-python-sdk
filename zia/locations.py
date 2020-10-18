@@ -9,7 +9,7 @@ class SubLocations(ZiaApiBase):
         Gets the sub-location information for the location with the specified ID
         """
         path = 'locations/{}/sublocations'.format(location_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def create(self, sublocation):
         """
@@ -18,13 +18,13 @@ class SubLocations(ZiaApiBase):
         path = 'locations'
         if 'parentId' not in sublocation:
             raise RuntimeError('parentId required')
-        return self._output(self._session.post(path, sublocation))
+        return self._session.post(path, sublocation)
 
 
 class Locations(ZiaApiBase):
-    def __init__(self, _session, _output_type):
-        super().__init__(_session, _output_type)
-        self.sublocations = SubLocations(self._session, _output_type)
+    def __init__(self, _session):
+        super().__init__(_session)
+        self.sublocations = SubLocations(self._session)
 
     def list(self, summary=False):
         """
@@ -34,14 +34,14 @@ class Locations(ZiaApiBase):
         path = 'locations'
         if summary:
             path += '/lite'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def create(self, location):
         """
         Adds new locations
         """
         path = 'locations'
-        return self._output(self._session.post(path, location))
+        return self._session.post(path, location)
 
     def show(self, location_id):
         """
@@ -50,14 +50,14 @@ class Locations(ZiaApiBase):
         if not location_id:
             return "Location Requried"
         path = 'locations/{}'.format(location_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def update(self, location_id, location):
         """
         Updates the location and sub-location information for the specified ID
         """
         path = 'locations/{}'.format(location_id)
-        return self._output(self._session.put(path, location))
+        return self._session.put(path, location)
 
     def delete(self, location_object):
         """
@@ -67,10 +67,10 @@ class Locations(ZiaApiBase):
         t = type(location_object)
         if t is int or t is str:
             path = 'locations/{}'.format(location_object)
-            return self._output(self._session.delete(path))
+            return self._session.delete(path)
         elif t is dict:
             path = 'locations/bulkDelete'
-            return self._output(self._session.post(path, location_object))
+            return self._session.post(path, location_object)
         raise RuntimeError(
             'unknown location_object type {}'.format(t.__name__))
 

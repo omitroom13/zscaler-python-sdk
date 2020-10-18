@@ -19,27 +19,27 @@ class VpnCredentials(ZiaApiBase):
 
     def list(self):
         path = 'vpnCredentials'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def create(self, credential):
         path = 'vpnCredentials'
         if 'preSharedKey' not in credential:
             credential['preSharedKey'] = self._randomize_psk()
-        return self._output(self._session.post(path, credential))
+        return self._session.post(path, credential)
 
     def show(self, vpn_id):
         path = 'vpnCredentials/{}'.format(vpn_id)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def update(self, vpn_id, credential):
         path = 'vpnCredentials/{}'.format(vpn_id)
         if 'preSharedKey' not in credential:
             credential['preSharedKey'] = self._randomize_psk()
-        return self._output(self._session.put(path, credential))
+        return self._session.put(path, credential)
 
     def delete(self, vpn_id):
         path = 'vpnCredentials/{}'.format(vpn_id)
-        return self._output(self._session.delete(path))
+        return self._session.delete(path)
 
 
 LOGGER = logging.getLogger(__name__)

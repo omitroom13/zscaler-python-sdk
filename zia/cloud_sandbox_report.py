@@ -8,7 +8,7 @@ class CloudSandboxReport(ZiaApiBase):
         Gets the Sandbox Report API quota information for your organization
         """
         path = 'sandbox/report/quota'
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
     def get_report(self, md5hash, details="summary"):
         """
@@ -17,7 +17,7 @@ class CloudSandboxReport(ZiaApiBase):
         if details not in ['summary', 'full']:
             raise RuntimeError('details must be summary or full')
         path = 'sandbox/report/{}?details={}'.format(md5hash, details)
-        return self._output(self._session.get(path))
+        return self._session.get(path)
 
 
 LOGGER = logging.getLogger(__name__)

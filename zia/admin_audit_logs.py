@@ -7,14 +7,14 @@ from .defaults import ZiaApiBase
 
 
 class AdminAuditLogs(ZiaApiBase):
-    def get(self, _output_type=None):
+    def get(self):
         """
         Gets the status of a request for an audit log report
         """
         path = 'auditlogEntryReport'
         # status complete
         # download
-        return self._output(self._session.get(path), _output_type=_output_type)
+        return self._session.get(path)
 
     def create(self, start, duration, page=0, page_size=0):
         """
@@ -31,7 +31,7 @@ class AdminAuditLogs(ZiaApiBase):
             'page': page,
             'pageSize': page_size
         }
-        return self._output(self._session.post(path, body))
+        return self._session.post(path, body)
 
     def wait(self, timeout=600):
         """
@@ -40,18 +40,18 @@ class AdminAuditLogs(ZiaApiBase):
         status = {'status': 'not started yet'}
         s = datetime.datetime.now()
         while status is not None and status['status'] != 'COMPLETE':
-            status = self.get(_output_type='dict')
+            status = self.get()
             e = datetime.datetime.now()
             if (e - s).seconds > timeout:
                 raise RuntimeError('timeout')
-        return self._output(status)
+        return status
 
     def cancel(self):
         """
         Cancels the request to create an audit log report
         """
         path = 'auditlogEntryReport'
-        return self._output(self._session.delete(path))
+        return self._session.delete(path)
 
     def download(self, output):
         """
@@ -63,7 +63,7 @@ class AdminAuditLogs(ZiaApiBase):
         path = 'auditlogEntryReport/download'
         with open(output, 'w') as f:
             f.write(self._session.get(path))
-        # return self._output(self._session.get(path))
+        # return self._session.get(path))
 
 
 LOGGER = logging.getLogger(__name__)
