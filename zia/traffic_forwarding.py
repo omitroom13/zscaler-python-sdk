@@ -41,5 +41,23 @@ class VpnCredentials(ZiaApiBase):
         path = 'vpnCredentials/{}'.format(vpn_id)
         return self._session.delete(path)
 
+class IpGreTunnelInfo(ZiaApiBase):
+    def list(self):
+        """
+        Gets a list of IP addresses with GRE tunnel details
+        """
+        path = 'orgProvisioning/ipGreTunnelInfo'
+        return self._session.get(path)
+
+class Vips(ZiaApiBase):
+    def list(self, include="all"):
+        """
+        Gets a paginated list of the virtual IP addresses (VIPs) available in the Zscaler cloud
+        """
+        if include not in ["all", "public", "private"]:
+            RutimeError("include {} must be all, public or private.".format(include))
+        path = 'vips?include={}'.format(include)
+        return self._session.get(path)
+    
 
 LOGGER = logging.getLogger(__name__)
