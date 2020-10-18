@@ -97,7 +97,7 @@ class Session(object):
         with open(filename, 'w') as file:
             yaml.dump(y, file)
 
-    def _set_header(self, cookie=None):
+    def _set_header(self):
         header = {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
@@ -148,7 +148,7 @@ class Session(object):
             'timestamp': self.timestamp
         }
         LOGGER.debug("HTTP BODY: {}".format(body))
-        res = self.post(path, body)
+        res = self._request(self.session.post, path, body=body, authentication=False)
         LOGGER.debug(res)
         if 'authType' in res and res['authType'] == 'ADMIN_LOGIN':
             LOGGER.info('authenticated')
@@ -166,10 +166,11 @@ class Session(object):
         path = 'status/activate'
         return self.post(path)
 
-    def request(self, method, path, body=None):
-        res = self.authenticate()
-        if res['code'] != 'OK':
-            raise RuntimeError(res)
+    def _request(self, method, path, body=None, authentication=True):
+        if authentication:
+            res = self.authenticate()
+            if res['code'] != 'OK':
+                raise RuntimeError(res)
         header = self._set_header()
         uri = "/".join([self.url, self.API_VERSION, path])
         LOGGER.debug('method {} path {} body {}'.format(
@@ -229,16 +230,16 @@ class Session(object):
         return res.text
 
     def get(self, path, body=None):
-        return self.request(self.session.get, path, body)
+        return self._request(self.session.get, path, body)
 
     def post(self, path, body):
-        return self.request(self.session.post, path, body)
+        return self._request(self.session.post, path, body)
 
     def put(self, path, body):
-        return self.request(self.session.put, path, body)
+        return self._request(self.session.put, path, body)
 
     def delete(self, path):
-        return self.request(self.session.delete, path)
+        return self._request(self.session.delete, path)
 
 
 LOGGER = logging.getLogger(__name__)
