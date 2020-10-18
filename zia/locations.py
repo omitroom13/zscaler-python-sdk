@@ -64,7 +64,7 @@ class Locations(ZiaApiBase):
         elif t is dict:
             path = 'locations/bulkDelete'
             return self._output(self._session.post(path, location_object))
-        raise RuntimeError('unknown location_id type {}'.format(t.__name__))
+        raise RuntimeError('unknown location_object type {}'.format(t.__name__))
 
 
 LOGGER = logging.getLogger(__name__)
