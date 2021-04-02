@@ -11,10 +11,7 @@ import yaml
 
 from .defaults import load_config, RequestError, SessionTimeoutError, AuthenticationError
 
-PROFILE_FILENAME = os.path.join(os.environ['HOME'], '.zscaler', 'profile.yaml')
 PROFILE = 'default'
-
-COOKIE_FILENAME = os.path.join(os.environ['HOME'], '.zscaler', 'cookie.yaml')
 
 # constant
 URL = 'url'
@@ -31,31 +28,26 @@ class Session(object):
     def __init__(self, profile='default'):
         self.profile = profile
         self._profile = None
-        self.get_profile(name=profile)
-        self.url = self._profile[URL]
-        if self.url[-1] == '/':
-            raise RuntimeError('url {} must not be end with "/".'.format(url))
-        self.username = self._profile[USERNAME]
-        self.password = self._profile[PASSWORD]
-        (self.timestamp, self.obfuscated_api_key) = self._obfuscate_api_key(
-            self._profile[APIKEY])
         self.session = requests.Session()
+        self.profile_filename = os.path.join(os.environ['HOME'], '.zscaler', 'profile.yaml')
+        self.cookie_filename = os.path.join(os.environ['HOME'], '.zscaler', 'cookie.yaml')
 
-    def get_profile(self, filename=PROFILE_FILENAME, name=PROFILE, reread=False):
-        if self._profile is None or reread:
-            try:
-                with open(filename) as file:
-                    self._profile = yaml.safe_load(file)[name]
-            except FileNotFoundError:
-                raise RuntimeError(
-                    'Cannot find profile file: {}'.format(filename))
+    def load_profile(self):
+        try:
+            with open(self.profile_filename) as file:
+                self._profile = yaml.safe_load(file)[self.profile]
+        except FileNotFoundError:
+            raise RuntimeError(
+                'Cannot find profile file: {}'.format(self.profile_filename))
+        if self._profile[URL] == '/':
+            raise RuntimeError('url {} must not be end with "/".'.format(url))
         return self._profile
 
-    def load_cookie(self, filename=COOKIE_FILENAME, name=PROFILE, reread=False):
+    def load_cookie(self):
         y = None
-        with open(filename) as file:
+        with open(self.cookie_filename) as file:
             y = yaml.safe_load(file)
-        for d in y[name].values():
+        for d in y[self.profile].values():
             c = Cookie(
                 d['version'],
                 d['name'],
@@ -80,31 +72,32 @@ class Session(object):
             d['expires'] = None
             self.session.cookies.set_cookie(c)
 
-    def save_cookie(self, filename=COOKIE_FILENAME, name=PROFILE):
+    def save_cookie(self):
         y = {}
         try:
-            with open(filename) as file:
+            with open(self.cookie_filename) as file:
                 y = yaml.safe_load(file)
         except FileNotFoundError:
             pass
-        if name not in y:
-            y[name] = {}
+        if self.profile not in y:
+            y[self.profile] = {}
         for c in self.session.cookies:
-            y[name][c.name] = c.__dict__
-            if c.name == 'JSESSIONID' and 'expires' in y[name][c.name]:
+            y[self.profile][c.name] = c.__dict__
+            if c.name == 'JSESSIONID' and 'expires' in y[self.profile][c.name]:
                 # 2 hours is no basis.
-                y[name][c.name]['expires'] = int(time.time()) + 2*60*60
-        with open(filename, 'w') as file:
+                y[self.profile][c.name]['expires'] = int(time.time()) + 2*60*60
+        with open(self.cookie_filename, 'w') as file:
             yaml.dump(y, file)
 
-    def _set_header(self):
-        header = {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            'User-Agent': self.USER_AGENT
+    def _generate_static_kwargs(self):
+        return {
+            'headers': {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
+                'User-Agent': self.USER_AGENT
+            },
+            'timeout': self.REQUEST_TIMEOUTS
         }
-        LOGGER.debug("HTTP Header: {}".format(header))
-        return header
 
     def _obfuscate_api_key(self, api_key):
         now = str(int(time.time() * 1000))
@@ -122,6 +115,8 @@ class Session(object):
     def authenticate(self):
         if self.session.cookies.get('JSESSIONID'):
             return {'code': 'OK', 'message': 'already authenticated'}
+        if self._profile is None:
+            self.load_profile()
         try:
             self.load_cookie()
         except FileNotFoundError:
@@ -141,11 +136,12 @@ class Session(object):
                 return res
             LOGGER.info("cookie session expired")
         LOGGER.info("password authentication")
+        (timestamp, obfuscated_api_key) = self._obfuscate_api_key(self._profile[APIKEY])
         body = {
-            'username': self.username,
-            'password': self.password,
-            'apiKey': self.obfuscated_api_key,
-            'timestamp': self.timestamp
+            'username': self._profile[USERNAME],
+            'password': self._profile[PASSWORD],
+            'apiKey': obfuscated_api_key,
+            'timestamp': timestamp
         }
         LOGGER.debug("HTTP BODY: {}".format(body))
         res = self._request(self.session.post, path, body=body, authentication=False)
@@ -171,14 +167,10 @@ class Session(object):
             res = self.authenticate()
             if res['code'] != 'OK':
                 raise RuntimeError(res)
-        header = self._set_header()
-        uri = "/".join([self.url, self.API_VERSION, path])
+        uri = "/".join([self._profile[URL], self.API_VERSION, path])
         LOGGER.debug('method {} path {} body {}'.format(
             method.__name__, path, body))
-        kwargs = {
-            'headers': header,
-            'timeout': self.REQUEST_TIMEOUTS
-        }
+        kwargs = self._generate_static_kwargs()
         if body:
             kwargs['json'] = body
         res_json = None
@@ -226,7 +218,7 @@ class Session(object):
             raise RequestError(method.__name__, path, body, error)
         else:
             LOGGER.warning("text output might be error: {}".format(res.text))
-        # it may not be OK strictly becase api dit not return json.
+        # maybe it is bad because api did not return json.
         return res.text
 
     def get(self, path, body=None):
