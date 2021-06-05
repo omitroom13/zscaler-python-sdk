@@ -5,7 +5,9 @@ import os
 import re
 import requests
 from http.cookiejar import Cookie
-
+from requests.exceptions import ConnectionError
+from http.client import RemoteDisconnected
+                
 import yaml
 
 from .defaults import load_config, RequestError, SessionTimeoutError, AuthenticationError
@@ -38,7 +40,7 @@ class Session(object):
             raise RuntimeError(
                 'Cannot find profile file: {}'.format(self.profile_filename))
         if self._profile[URL] == '/':
-            raise RuntimeError('url {} must not be end with "/".'.format(url))
+            raise RuntimeError('url {} must not be end with "/".'.format(self._profile[URL]))
         return self._profile
 
     def load_cookie(self):
@@ -111,7 +113,9 @@ class Session(object):
         return (now, key)
 
     def authenticate(self):
-        if self.session.cookies.get('JSESSIONID'):
+        path = 'authenticatedSession'
+        status = self.is_authenticated()
+        if status:
             return {'code': 'OK', 'message': 'already authenticated'}
         if self._profile is None:
             self.load_profile()
@@ -123,16 +127,6 @@ class Session(object):
         except KeyError:
             LOGGER.warning(
                 'Cannot find cookie profile: {}'.format(self.cookie_filename))
-        path = 'authenticatedSession'
-        if self.session.cookies.get('JSESSIONID'):
-            LOGGER.info("cookie authentication")
-            res = self.get(path)
-            if 'authType' in res and res['authType'] == 'ADMIN_LOGIN':
-                LOGGER.info("authenticated")
-                res['code'] = 'OK'
-                res['message'] = 'cookie authenticated'
-                return res
-            LOGGER.info("cookie session expired")
         LOGGER.info("password authentication")
         (timestamp, obfuscated_api_key) = self._obfuscate_api_key(self._profile[APIKEY])
         body = {
@@ -152,6 +146,21 @@ class Session(object):
             return res
         raise RuntimeError('either credential or apikey are wrong')
 
+    def is_authenticated(self):
+        path = 'authenticatedSession'
+        c = self.session.cookies.get('JSESSIONID')
+        if c is None:
+            return None
+        LOGGER.debug("cookie authentication")
+        # res = self.get(path)
+        res = self._request(self.session.get, path, None, authentication=False)
+        if 'authType' in res and res['authType'] == 'ADMIN_LOGIN':
+            LOGGER.debug("authenticated")
+            res['code'] = 'OK'
+            res['message'] = 'cookie authenticated'
+            return res
+        return None
+
     def get_status(self):
         path = 'status'
         return self.get(path)
@@ -160,34 +169,66 @@ class Session(object):
         path = 'status/activate'
         return self.post(path)
 
+    def _retry_request(self, uri, method, kwargs, retry_count=3):
+        # api ごとに limit が違い面倒なので、何秒待つべきか把握していない。retry の時だけ気持ち待つ
+        api_rate_limit_seconds = 1
+        res = None
+        res_json = None
+        error = None
+        for count in range(retry_count):
+            try:
+                res = method(uri, **kwargs)
+                res_json = res.json()
+                error = res_json
+                if 'code' in error and error['code'] == 'UNEXPECTED_ERROR' and 'message' in error and error['message'] == 'Data access error 0xf':
+                    LOGGER.warning('UNEXPECTED_ERROR! retry {}/{}'.format(count, retry_count))
+                    (res, res_json, error) = (None, None, None)
+                    time.sleep(api_rate_limit_seconds)
+                    continue
+            except json.decoder.JSONDecodeError:
+                pass
+            except (ConnectionError, RemoteDisconnected) as exc:
+                LOGGER.warning('ConnectionError/RemoteDisconnected {} retry {}/{}'.format(str(exc), count, retry_count))
+            if count != 0:
+                LOGGER.warning('UNEXPECTED_ERROR recovered by retry {}/{}'.format(count, retry_count))
+            break
+        return (res, res_json, error)
+
     def _request(self, method, path, body=None, authentication=True):
         if authentication:
-            res = self.authenticate()
-            if res['code'] != 'OK':
-                raise RuntimeError(res)
+            res = self.is_authenticated()
+            if res is None or res['code'] != 'OK':
+                LOGGER.warning('session timeout? reauth')
+                self.authenticate()
         uri = "/".join([self._profile[URL], self.API_VERSION, path])
         LOGGER.debug('method {} path {} body {}'.format(
             method.__name__, path, body))
         kwargs = self._generate_static_kwargs()
         if body:
             kwargs['json'] = body
-        res_json = None
-        error = None
-        res = method(uri, **kwargs)
-        code = {'code': res.text, 'message': res.text}
-        try:
-            res_json = res.json()
-            error = res_json
-        except json.decoder.JSONDecodeError:
-            pass
+        # res_json = None
+        # error = None
+        # # -- ここから retry --
+        # res = method(uri, **kwargs)
+        # # code = {'code': res.text, 'message': res.text}
+        # try:
+        #     res_json = res.json()
+        #     error = res_json
+        #     # -- ここまで retry --
+        # except json.decoder.JSONDecodeError:
+        #     pass
+        (res, res_json, error) = self._retry_request(uri, method, kwargs)
         if res.ok:
             error = None
         if error and 'code' in error:
+            # よくわからんタイミングで {'code': 'UNEXPECTED_ERROR', 'message': 'Data access error 0xf'} が発生する? リトライすれば良い?
+            if error['code'] == 'UNEXPECTED_ERROR' and 'message' in error and error['message'] == 'Data access error 0xf':
+                LOGGER.warning('whooooa')
             raise RequestError(method.__name__, path, body, error)
         if error and re.match(r'Rate Limit', error['message']):
             # [API Rate Limit Summary | Zscaler](https://help.zscaler.com/zia/api-rate-limit-summary)
             # hint: ssl settings is very low limit(1/min and 4/hr)
-            error['code'] = "REATELIMITEXCEEDED"
+            error['code'] = "RATELIMITEXCEEDED"
             error['message'] += ". Retry After {}".format(error['Retry-After'])
             raise RequestError(method.__name__, path, body, error)
         if res_json:
