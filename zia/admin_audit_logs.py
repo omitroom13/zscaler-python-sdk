@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 
 import isodate
@@ -16,11 +17,12 @@ class AdminAuditLogs(ZiaApiBase):
         # download
         return self._session.get(path)
 
-    def create(self, start, duration, page=0, page_size=0):
+    def create(self, start, duration):
         """
         Creates an audit log report for the specified time period and saves it as a CSV file
         start : iso8601 format (yyyy-mm-ddThh:mm:ss, ex. 2020-10-17T19:13:00)
         duration : iso8601 duration (PdDThHmMsS, ex. P7DT23H59M59S)
+        * start/output log timezone is determined by admin account setting *
         """
         s = isodate.parse_datetime(start)
         e = s + isodate.parse_duration(duration)
@@ -28,18 +30,17 @@ class AdminAuditLogs(ZiaApiBase):
         body = {
             'startTime': int(s.timestamp()*1000),
             'endTime': int(e.timestamp()*1000),
-            'page': page,
-            'pageSize': page_size
         }
+        LOGGER.debug(body)
         return self._session.post(path, body)
 
     def wait(self, timeout=600):
         """
         Waits for generating report.
         """
-        status = {'status': 'not started yet'}
         s = datetime.datetime.now()
-        while status is not None and status['status'] != 'COMPLETE':
+        status = json.loads(self.get())
+        while status['status'] != 'COMPLETE':
             status = self.get()
             e = datetime.datetime.now()
             if (e - s).seconds > timeout:
@@ -55,15 +56,16 @@ class AdminAuditLogs(ZiaApiBase):
 
     def download(self, output):
         """
-        Downloads the most recently created audit log report. !!!!!TIMESTAMP IS PDT!!!!!
+        Downloads the most recently created audit log report.
         output : csv filename
         """
-        # timezone が PDT になってる
         self.wait()
         path = 'auditlogEntryReport/download'
         with open(output, 'w') as f:
             f.write(self._session.get(path))
-        # return self._session.get(path))
+            LOGGER.INFO('log downloaded: {}'.format())
+
 
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
