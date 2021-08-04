@@ -114,9 +114,6 @@ class Session(object):
 
     def authenticate(self):
         path = 'authenticatedSession'
-        status = self.is_authenticated()
-        if status:
-            return {'code': 'OK', 'message': 'already authenticated'}
         if self._profile is None:
             self.load_profile()
         try:
@@ -127,6 +124,9 @@ class Session(object):
         except KeyError:
             LOGGER.warning(
                 'Cannot find cookie profile: {}'.format(self.cookie_filename))
+        status = self.is_authenticated()
+        if status:
+            return {'code': 'OK', 'message': 'already authenticated'}
         LOGGER.info("password authentication")
         (timestamp, obfuscated_api_key) = self._obfuscate_api_key(self._profile[APIKEY])
         body = {
@@ -206,17 +206,6 @@ class Session(object):
         kwargs = self._generate_static_kwargs()
         if body:
             kwargs['json'] = body
-        # res_json = None
-        # error = None
-        # # -- ここから retry --
-        # res = method(uri, **kwargs)
-        # # code = {'code': res.text, 'message': res.text}
-        # try:
-        #     res_json = res.json()
-        #     error = res_json
-        #     # -- ここまで retry --
-        # except json.decoder.JSONDecodeError:
-        #     pass
         (res, res_json, error) = self._retry_request(uri, method, kwargs)
         if res.ok:
             error = None
