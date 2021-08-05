@@ -63,8 +63,7 @@ class AdminAuditLogs(ZiaApiBase):
         path = 'auditlogEntryReport/download'
         with open(output, 'w') as f:
             f.write(self._session.get(path))
-            LOGGER.INFO('log downloaded: {}'.format())
-
+            LOGGER.info('log downloaded: {}'.format(output))
 
 
 LOGGER = logging.getLogger(__name__)
